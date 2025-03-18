@@ -6,7 +6,7 @@ async fn main() -> Result<()> {
     server::serve(
         "0.0.0.0",
         3001,
-        "/home/cuikho210/Projects/train-tts/qiqi/onnx-model",
+        "/home/cuikho210/Documents/assets/tts-models/vits-piper-en_US-libritts_r-medium",
     )
     .await?;
     Ok(())

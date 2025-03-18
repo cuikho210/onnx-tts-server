@@ -1,4 +1,4 @@
-use crate::{tts::SherpaOnnxMeloTts, Speaker};
+use crate::{tts::SherpaOnnxPiperTts, Speaker};
 use axum::{extract::State, http::StatusCode, routing::post, Json, Router};
 use eyre::Result;
 use serde::Deserialize;
@@ -7,13 +7,13 @@ use tokio::sync::Mutex;
 
 #[derive(Clone)]
 pub struct AppState {
-    pub tts: Arc<Mutex<SherpaOnnxMeloTts>>,
+    pub tts: Arc<Mutex<SherpaOnnxPiperTts>>,
     pub speaker: Arc<Speaker>,
 }
 impl AppState {
     pub fn from_path(path: &str) -> Self {
         Self {
-            tts: Arc::new(Mutex::new(SherpaOnnxMeloTts::from_path(path))),
+            tts: Arc::new(Mutex::new(SherpaOnnxPiperTts::from_path(path))),
             speaker: Arc::new(Speaker::new()),
         }
     }
