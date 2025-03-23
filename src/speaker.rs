@@ -10,6 +10,12 @@ pub struct Speaker {
     pub stream: OutputStreamWrapper,
     pub sink: Sink,
 }
+impl Default for Speaker {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Speaker {
     pub fn new() -> Self {
         let (stream, stream_handle) = OutputStream::try_default().unwrap();

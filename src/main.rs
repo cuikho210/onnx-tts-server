@@ -16,6 +16,10 @@ struct Args {
     /// Port to listen on
     #[clap(long, default_value = "3001")]
     port: i16,
+
+    /// TTS engine type: "melo" or "piper"
+    #[clap(long, default_value = "piper")]
+    engine: String,
 }
 
 #[tokio::main]
@@ -28,6 +32,6 @@ async fn main() -> Result<()> {
 
     tracing::info!("Loading TTS model from: {}", args.model_path);
 
-    server::serve(&args.host, args.port, &args.model_path).await?;
+    server::serve(&args.host, args.port, &args.model_path, &args.engine).await?;
     Ok(())
 }

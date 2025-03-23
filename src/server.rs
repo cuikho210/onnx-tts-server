@@ -1,4 +1,8 @@
-use crate::{tts::SherpaOnnxPiperTts, utils::split_sentences, Speaker};
+use crate::{
+    tts::{SherpaOnnxMeloTts, SherpaOnnxPiperTts, TtsEngine, TtsEngineType},
+    utils::split_sentences,
+    Speaker,
+};
 use axum::{extract::State, http::StatusCode, routing::post, Json, Router};
 use eyre::Result;
 use serde::Deserialize;
@@ -7,20 +11,26 @@ use tokio::sync::Mutex;
 
 #[derive(Clone)]
 pub struct AppState {
-    pub tts: Arc<Mutex<SherpaOnnxPiperTts>>,
+    pub tts: Arc<Mutex<Box<dyn TtsEngine + Send>>>,
     pub speaker: Arc<Speaker>,
 }
 impl AppState {
-    pub fn from_path(path: &str) -> Self {
+    pub fn from_path(path: &str, engine_type: TtsEngineType) -> Self {
+        let tts: Box<dyn TtsEngine + Send> = match engine_type {
+            TtsEngineType::Melo => Box::new(SherpaOnnxMeloTts::from_path(path)),
+            TtsEngineType::Piper => Box::new(SherpaOnnxPiperTts::from_path(path)),
+        };
+
         Self {
-            tts: Arc::new(Mutex::new(SherpaOnnxPiperTts::from_path(path))),
+            tts: Arc::new(Mutex::new(tts)),
             speaker: Arc::new(Speaker::new()),
         }
     }
 }
 
-pub async fn serve(host: &str, port: i16, model_path: &str) -> Result<()> {
-    let state = AppState::from_path(model_path);
+pub async fn serve(host: &str, port: i16, model_path: &str, engine: &str) -> Result<()> {
+    let engine_type = TtsEngineType::from_str_arg(engine);
+    let state = AppState::from_path(model_path, engine_type);
     let app = Router::new().route("/speak", post(speak)).with_state(state);
 
     let listener = tokio::net::TcpListener::bind(format!("{}:{}", host, port))

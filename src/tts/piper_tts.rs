@@ -1,8 +1,14 @@
+use super::TtsEngine;
 use eyre::Result;
 use sherpa_rs::tts::{TtsAudio, VitsTts, VitsTtsConfig};
 
 pub struct SherpaOnnxPiperTts {
     tts: VitsTts,
+}
+impl TtsEngine for SherpaOnnxPiperTts {
+    fn create(&mut self, text: &str, sid: i32, speed: f32) -> Result<TtsAudio> {
+        self.tts.create(text, sid, speed)
+    }
 }
 impl SherpaOnnxPiperTts {
     pub fn new(config: VitsTtsConfig) -> Self {
@@ -22,9 +28,5 @@ impl SherpaOnnxPiperTts {
         Self {
             tts: VitsTts::new(config),
         }
-    }
-
-    pub fn create(&mut self, text: &str, sid: i32, speed: f32) -> Result<TtsAudio> {
-        self.tts.create(text, sid, speed)
     }
 }
