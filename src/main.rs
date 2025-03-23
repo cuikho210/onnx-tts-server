@@ -3,6 +3,10 @@ use onnx_tts_server::server;
 
 #[tokio::main]
 async fn main() -> Result<()> {
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::DEBUG)
+        .init();
+
     server::serve(
         "0.0.0.0",
         3001,

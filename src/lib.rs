@@ -1,3 +1,5 @@
+mod utils;
+
 pub mod server;
 pub mod speaker;
 pub mod tts;

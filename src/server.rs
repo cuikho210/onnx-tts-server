@@ -1,4 +1,4 @@
-use crate::{tts::SherpaOnnxPiperTts, Speaker};
+use crate::{tts::SherpaOnnxPiperTts, utils::split_sentences, Speaker};
 use axum::{extract::State, http::StatusCode, routing::post, Json, Router};
 use eyre::Result;
 use serde::Deserialize;
@@ -20,8 +20,6 @@ impl AppState {
 }
 
 pub async fn serve(host: &str, port: i16, model_path: &str) -> Result<()> {
-    tracing_subscriber::fmt::init();
-
     let state = AppState::from_path(model_path);
     let app = Router::new().route("/speak", post(speak)).with_state(state);
 
@@ -48,18 +46,27 @@ async fn speak(
 ) -> Result<(), StatusCode> {
     let sid = payload.sid.unwrap_or(1);
     let speed = payload.speed.unwrap_or(1.0);
+    let sentences = split_sentences(&payload.content);
 
-    let audio = {
-        let mut tts = state.tts.lock().await;
-        tts.create(&payload.content, sid, speed).map_err(|e| {
-            tracing::error!("Error when creating audio {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
-        })?
-    };
+    for sentence in sentences {
+        let audio = {
+            let mut tts = state.tts.lock().await;
+            tracing::debug!("tts: {}", &sentence);
+            tts.create(&sentence, sid, speed).map_err(|e| {
+                tracing::error!("Error when creating audio: {}", e);
+                StatusCode::INTERNAL_SERVER_ERROR
+            })?
+        };
 
-    state
-        .speaker
-        .append_samples(audio.samples, audio.sample_rate);
+        state
+            .speaker
+            .append_samples(audio.samples, audio.sample_rate);
+    }
+
+    state.speaker.sleep_until_end();
+
+    // TODO: Call this when http request aborted
+    // state.speaker.clear();
 
     Ok(())
 }

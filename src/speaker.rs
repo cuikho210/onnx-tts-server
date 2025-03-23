@@ -22,6 +22,13 @@ impl Speaker {
     pub fn append_samples(&self, samples: Vec<f32>, sample_rate: u32) {
         let source = SamplesBuffer::new(1, sample_rate, samples);
         self.sink.append(source);
+    }
+
+    pub fn sleep_until_end(&self) {
         self.sink.sleep_until_end();
+    }
+
+    pub fn clear(&self) {
+        self.sink.clear();
     }
 }
