@@ -44,6 +44,9 @@ async fn speak(
     State(state): State<AppState>,
     Json(payload): Json<SpeakRequest>,
 ) -> Result<(), StatusCode> {
+    state.speaker.clear();
+    state.speaker.play();
+
     let sid = payload.sid.unwrap_or(1);
     let speed = payload.speed.unwrap_or(1.0);
     let sentences = split_sentences(&payload.content);
@@ -51,7 +54,6 @@ async fn speak(
     for sentence in sentences {
         let audio = {
             let mut tts = state.tts.lock().await;
-            tracing::debug!("tts: {}", &sentence);
             tts.create(&sentence, sid, speed).map_err(|e| {
                 tracing::error!("Error when creating audio: {}", e);
                 StatusCode::INTERNAL_SERVER_ERROR
@@ -64,9 +66,5 @@ async fn speak(
     }
 
     state.speaker.sleep_until_end();
-
-    // TODO: Call this when http request aborted
-    // state.speaker.clear();
-
     Ok(())
 }

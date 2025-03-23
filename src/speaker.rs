@@ -31,4 +31,8 @@ impl Speaker {
     pub fn clear(&self) {
         self.sink.clear();
     }
+
+    pub fn play(&self) {
+        self.sink.play();
+    }
 }
