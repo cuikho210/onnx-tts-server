@@ -1,5 +1,22 @@
+use clap::Parser;
 use eyre::Result;
 use onnx_tts_server::server;
+
+#[derive(Parser, Debug)]
+#[clap(author, version, about)]
+struct Args {
+    /// Path to TTS model directory
+    #[clap(short, long, default_value = "./tts-models/default")]
+    model_path: String,
+
+    /// Host address to bind
+    #[clap(long, default_value = "0.0.0.0")]
+    host: String,
+
+    /// Port to listen on
+    #[clap(long, default_value = "3001")]
+    port: i16,
+}
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -7,11 +24,10 @@ async fn main() -> Result<()> {
         .with_max_level(tracing::Level::DEBUG)
         .init();
 
-    server::serve(
-        "0.0.0.0",
-        3001,
-        "/home/cuikho210/Documents/assets/tts-models/vits-piper-en_US-libritts_r-medium",
-    )
-    .await?;
+    let args = Args::parse();
+
+    tracing::info!("Loading TTS model from: {}", args.model_path);
+
+    server::serve(&args.host, args.port, &args.model_path).await?;
     Ok(())
 }
