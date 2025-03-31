@@ -33,12 +33,10 @@ pub async fn serve(host: &str, port: u16, model_path: &str, engine: &str) -> Res
     let state = AppState::from_path(model_path, engine_type);
     let app = Router::new().route("/speak", post(speak)).with_state(state);
 
-    let listener = tokio::net::TcpListener::bind(format!("{}:{}", host, port))
-        .await
-        .unwrap();
+    let listener = tokio::net::TcpListener::bind(format!("{}:{}", host, port)).await?;
 
     tracing::info!("Start listening on http://{}:{}", host, port);
-    axum::serve(listener, app).await.unwrap();
+    axum::serve(listener, app).await?;
 
     Ok(())
 }
