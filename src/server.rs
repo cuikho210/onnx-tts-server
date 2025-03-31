@@ -28,7 +28,7 @@ impl AppState {
     }
 }
 
-pub async fn serve(host: &str, port: i16, model_path: &str, engine: &str) -> Result<()> {
+pub async fn serve(host: &str, port: u16, model_path: &str, engine: &str) -> Result<()> {
     let engine_type = TtsEngineType::from_str_arg(engine);
     let state = AppState::from_path(model_path, engine_type);
     let app = Router::new().route("/speak", post(speak)).with_state(state);
