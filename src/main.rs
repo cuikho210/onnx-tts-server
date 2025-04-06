@@ -1,14 +1,10 @@
 use clap::Parser;
 use eyre::Result;
-use onnx_tts_server::{config::Config, server};
+use onnx_tts_server::{config::AppConfig, server};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about)]
 struct Args {
-    /// Path to TTS model directory
-    #[clap(short, long)]
-    model_path: Option<String>,
-
     /// Host address to bind
     #[clap(long)]
     host: Option<String>,
@@ -17,13 +13,25 @@ struct Args {
     #[clap(long)]
     port: Option<u16>,
 
-    /// TTS engine type: "melo" or "piper"
-    #[clap(long)]
-    engine: Option<String>,
-
     /// Generate default config file
     #[clap(long)]
     gen_config: bool,
+
+    /// Path to TTS model directory
+    #[clap(short, long)]
+    model: Option<String>,
+
+    /// Path to TTS model directory
+    #[clap(short, long)]
+    tokens: Option<String>,
+
+    /// Path to TTS model directory
+    #[clap(short, long)]
+    lexicon: Option<String>,
+
+    /// Path to TTS model directory
+    #[clap(short, long)]
+    espeak_ng_data: Option<String>,
 }
 
 #[tokio::main]
@@ -35,12 +43,12 @@ async fn main() -> Result<()> {
     let args = Args::parse();
 
     if args.gen_config {
-        if let Some(config_path) = Config::default_path() {
+        if let Some(config_path) = AppConfig::default_path() {
             if let Some(parent) = config_path.parent() {
                 std::fs::create_dir_all(parent)?;
             }
 
-            let default_config = Config::default();
+            let default_config = AppConfig::default();
             default_config.save_to_file(&config_path)?;
 
             tracing::info!("Default config generated at: {}", config_path.display());
@@ -51,15 +59,34 @@ async fn main() -> Result<()> {
         }
     }
 
-    let config = Config::load_config();
+    let config = {
+        let mut c = AppConfig::load_config();
 
-    let host = args.host.unwrap_or(config.server.host);
-    let port = args.port.unwrap_or(config.server.port);
-    let model_path = args.model_path.unwrap_or(config.tts.model_path);
-    let engine = args.engine.unwrap_or(config.tts.engine);
+        if let Some(val) = args.model {
+            c.tts.model = val;
+        }
+        if let Some(val) = args.tokens {
+            c.tts.tokens = val;
+        }
+        if let Some(val) = args.lexicon {
+            c.tts.lexicon = Some(val);
+        }
+        if let Some(val) = args.espeak_ng_data {
+            c.tts.espeak_ng_data = Some(val);
+        }
 
-    tracing::info!("Loading TTS model from: {}", &model_path);
+        if let Some(val) = args.host {
+            c.server.host = val;
+        }
+        if let Some(val) = args.port {
+            c.server.port = val;
+        }
 
-    server::serve(&host, port, &model_path, &engine).await?;
+        c
+    };
+
+    tracing::info!("Loading TTS model from: {}", &config.tts.model);
+
+    server::serve(&config).await?;
     Ok(())
 }

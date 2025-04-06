@@ -1,8 +1,4 @@
-use crate::{
-    tts::{SherpaOnnxMeloTts, SherpaOnnxPiperTts, TtsEngine, TtsEngineType},
-    utils::split_sentences,
-    Speaker,
-};
+use crate::{config::AppConfig, tts::SherpaOnnxTts, utils::split_sentences, Speaker};
 use axum::{extract::State, http::StatusCode, routing::post, Json, Router};
 use eyre::Result;
 use serde::Deserialize;
@@ -11,15 +7,12 @@ use tokio::sync::Mutex;
 
 #[derive(Clone)]
 pub struct AppState {
-    pub tts: Arc<Mutex<Box<dyn TtsEngine + Send>>>,
+    pub tts: Arc<Mutex<SherpaOnnxTts>>,
     pub speaker: Arc<Speaker>,
 }
 impl AppState {
-    pub fn from_path(path: &str, engine_type: TtsEngineType) -> Self {
-        let tts: Box<dyn TtsEngine + Send> = match engine_type {
-            TtsEngineType::Melo => Box::new(SherpaOnnxMeloTts::from_path(path)),
-            TtsEngineType::Piper => Box::new(SherpaOnnxPiperTts::from_path(path)),
-        };
+    pub fn from_app_config(config: &AppConfig) -> Self {
+        let tts = SherpaOnnxTts::from_app_config(config);
 
         Self {
             tts: Arc::new(Mutex::new(tts)),
@@ -28,14 +21,19 @@ impl AppState {
     }
 }
 
-pub async fn serve(host: &str, port: u16, model_path: &str, engine: &str) -> Result<()> {
-    let engine_type = TtsEngineType::from_str_arg(engine);
-    let state = AppState::from_path(model_path, engine_type);
+pub async fn serve(config: &AppConfig) -> Result<()> {
+    let state = AppState::from_app_config(config);
     let app = Router::new().route("/speak", post(speak)).with_state(state);
 
-    let listener = tokio::net::TcpListener::bind(format!("{}:{}", host, port)).await?;
+    let listener =
+        tokio::net::TcpListener::bind(format!("{}:{}", &config.server.host, &config.server.port))
+            .await?;
 
-    tracing::info!("Start listening on http://{}:{}", host, port);
+    tracing::info!(
+        "Start listening on http://{}:{}",
+        &config.server.host,
+        &config.server.port
+    );
     axum::serve(listener, app).await?;
 
     Ok(())

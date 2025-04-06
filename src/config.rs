@@ -13,16 +13,18 @@ pub struct ServerConfig {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TtsConfig {
-    pub model_path: String,
-    pub engine: String,
+    pub model: String,
+    pub tokens: String,
+    pub lexicon: Option<String>,
+    pub espeak_ng_data: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Config {
+pub struct AppConfig {
     pub server: ServerConfig,
     pub tts: TtsConfig,
 }
-impl Default for Config {
+impl Default for AppConfig {
     fn default() -> Self {
         Self {
             server: ServerConfig {
@@ -30,20 +32,22 @@ impl Default for Config {
                 port: 3001,
             },
             tts: TtsConfig {
-                model_path: "./tts-models/default".to_string(),
-                engine: "piper".to_string(),
+                model: String::new(),
+                tokens: String::new(),
+                lexicon: Some(String::new()),
+                espeak_ng_data: Some(String::new()),
             },
         }
     }
 }
-impl Config {
-    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self> {
+impl AppConfig {
+    pub fn from_file(path: impl AsRef<Path>) -> Result<Self> {
         let content = fs::read_to_string(path)?;
-        let config: Config = toml::from_str(&content)?;
+        let config: AppConfig = toml::from_str(&content)?;
         Ok(config)
     }
 
-    pub fn save_to_file<P: AsRef<Path>>(&self, path: P) -> Result<()> {
+    pub fn save_to_file(&self, path: impl AsRef<Path>) -> Result<()> {
         let content = toml::to_string_pretty(self)?;
         fs::write(path, content)?;
         Ok(())
