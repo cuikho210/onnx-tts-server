@@ -8,7 +8,6 @@ use tokio::sync::Mutex;
 #[derive(Clone)]
 pub struct AppState {
     pub tts: Arc<Mutex<SherpaOnnxTts>>,
-    pub speaker: Arc<Speaker>,
 }
 impl AppState {
     pub fn from_app_config(config: &AppConfig) -> Self {
@@ -16,7 +15,6 @@ impl AppState {
 
         Self {
             tts: Arc::new(Mutex::new(tts)),
-            speaker: Arc::new(Speaker::new()),
         }
     }
 }
@@ -50,12 +48,10 @@ async fn speak(
     State(state): State<AppState>,
     Json(payload): Json<SpeakRequest>,
 ) -> Result<(), StatusCode> {
-    state.speaker.clear();
-    state.speaker.play();
-
     let sid = payload.sid.unwrap_or(1);
     let speed = payload.speed.unwrap_or(1.0);
     let sentences = split_sentences(&payload.content);
+    let speaker = Speaker::default();
 
     for sentence in sentences {
         let audio = {
@@ -66,11 +62,9 @@ async fn speak(
             })?
         };
 
-        state
-            .speaker
-            .append_samples(audio.samples, audio.sample_rate);
+        speaker.append_samples(audio.samples, audio.sample_rate);
     }
 
-    state.speaker.sleep_until_end();
+    speaker.sleep_until_end().await;
     Ok(())
 }
