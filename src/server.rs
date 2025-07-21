@@ -4,6 +4,7 @@ use eyre::Result;
 use serde::Deserialize;
 use std::sync::Arc;
 use tokio::sync::Mutex;
+use tower_http::cors::{Any, CorsLayer};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -21,7 +22,14 @@ impl AppState {
 
 pub async fn serve(config: &AppConfig) -> Result<()> {
     let state = AppState::from_app_config(config);
-    let app = Router::new().route("/speak", post(speak)).with_state(state);
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods(Any)
+        .allow_headers(Any);
+    let app = Router::new()
+        .route("/speak", post(speak))
+        .layer(cors)
+        .with_state(state);
 
     let listener =
         tokio::net::TcpListener::bind(format!("{}:{}", &config.server.host, &config.server.port))
