@@ -1,6 +1,9 @@
 use crate::config::AppConfig;
 use eyre::Result;
-use sherpa_rs::tts::{TtsAudio, VitsTts, VitsTtsConfig};
+use sherpa_rs::{
+    tts::{TtsAudio, VitsTts, VitsTtsConfig},
+    OnnxConfig,
+};
 
 pub struct SherpaOnnxTts {
     tts: VitsTts,
@@ -16,6 +19,12 @@ impl SherpaOnnxTts {
         let mut vits_tts_config = VitsTtsConfig {
             model: app_config.tts.model.to_owned(),
             tokens: app_config.tts.tokens.to_owned(),
+            onnx_config: OnnxConfig {
+                num_threads: std::thread::available_parallelism()
+                    .map(|v| v.get() as i32)
+                    .unwrap_or(1),
+                ..Default::default()
+            },
             ..Default::default()
         };
 
